@@ -370,7 +370,7 @@
 </section>
 
 <!-- ════════ 03 : LA BOUILLABAISSE ════════ -->
-<section id="bouilla" class="relative py-40 overflow-hidden" style="contain: paint;" data-scene="03">
+<section id="bouilla" class="relative py-40 overflow-hidden" data-scene="03">
   <div class="absolute inset-0 overflow-hidden">
     <video id="bouilla-bg" muted playsinline preload="metadata"
            class="w-full h-full object-cover" style="filter: brightness(0.28) saturate(1.2);">
@@ -566,25 +566,28 @@ if (noMotion) {
   /* ─── BOUILLABAISSE VIDEO CONTRÔLÉE AU SCROLL ─── */
   const bvid = document.getElementById('bouilla-bg');
 
-  // Attendre que la durée soit connue avant de créer le trigger
-  function initBouillaTrigger() {
-    ScrollTrigger.create({
-      trigger: '#bouilla',
-      start: 'top top',
-      end: '+=300%',       // 3× la hauteur de l'écran = durée de "lecture"
-      pin: true,
-      scrub: 1.5,
-      onUpdate(self) {
-        if (bvid.duration) bvid.currentTime = bvid.duration * self.progress;
-      }
-    });
-  }
+  // Créé synchroniquement, dans l'ordre du document : le pin-spacer doit
+  // exister AVANT les triggers des sections suivantes (chap-num 04, etc.),
+  // sinon leurs positions sont calculées sur un layout périmé et la vidéo
+  // épinglée recouvre la section 04. Le garde `if (bvid.duration)` gère le
+  // cas où les métadonnées ne sont pas encore chargées.
+  ScrollTrigger.create({
+    trigger: '#bouilla',
+    start: 'top top',
+    end: '+=300%',       // 3× la hauteur de l'écran = durée de "lecture"
+    pin: true,
+    scrub: 1.5,
+    onUpdate(self) {
+      if (bvid.duration) bvid.currentTime = bvid.duration * self.progress;
+    }
+  });
 
-  if (bvid.readyState >= 1) {
-    initBouillaTrigger();
-  } else {
-    bvid.addEventListener('loadedmetadata', initBouillaTrigger, { once: true });
-  }
+  // Une fois les métadonnées connues : forcer le rendu de la 1re frame et
+  // recalculer les positions (sans effet de layout, mais sûr).
+  bvid.addEventListener('loadedmetadata', () => {
+    bvid.currentTime = 0.01;
+    ScrollTrigger.refresh();
+  }, { once: true });
 
   /* ─── CHAPTER NUMBERS PARALLAX ─── */
   gsap.utils.toArray('.chap-num').forEach(el => {
